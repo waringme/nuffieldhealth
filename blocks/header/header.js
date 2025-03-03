@@ -7,16 +7,12 @@ const isDesktop = window.matchMedia('(min-width: 900px)');
 function closeOnEscape(e) {
   if (e.code === 'Escape') {
     const nav = document.getElementById('nav');
-    const navSections = nav.querySelector('.nav-sections');
-    const navSectionExpanded = navSections.querySelector('[aria-expanded="true"]');
-    if (navSectionExpanded && isDesktop.matches) {
-      // eslint-disable-next-line no-use-before-define
-      toggleAllNavSections(navSections);
-      navSectionExpanded.focus();
-    } else if (!isDesktop.matches) {
-      // eslint-disable-next-line no-use-before-define
-      toggleMenu(nav, navSections);
-      nav.querySelector('button').focus();
+    const navMenu = nav.querySelector('.nav-menu');
+    if (navMenu) {
+      const activeDropdown = navMenu.querySelector('li.active');
+      if (activeDropdown) {
+        activeDropdown.classList.remove('active');
+      }
     }
   }
 }
@@ -117,50 +113,85 @@ export default async function decorate(block) {
   block.textContent = '';
   const nav = document.createElement('nav');
   nav.id = 'nav';
-  while (fragment.firstElementChild) nav.append(fragment.firstElementChild);
 
-  const classes = ['brand', 'sections', 'tools'];
-  classes.forEach((c, i) => {
-    const section = nav.children[i];
-    if (section) section.classList.add(`nav-${c}`);
-  });
+  // Create brand section
+  const brand = document.createElement('div');
+  brand.className = 'nav-brand';
+  const brandLink = document.createElement('a');
+  brandLink.href = '/';
+  const brandImg = document.createElement('img');
+  brandImg.src = '/images/logo.svg';
+  brandImg.alt = 'Nuffield Health';
+  brandLink.appendChild(brandImg);
+  brand.appendChild(brandLink);
+  nav.appendChild(brand);
 
-  const navBrand = nav.querySelector('.nav-brand');
-  const brandLink = navBrand.querySelector('.button');
-  if (brandLink) {
-    brandLink.className = '';
-    brandLink.closest('.button-container').className = '';
-  }
+  // Create search section
+  const search = document.createElement('div');
+  search.className = 'nav-search';
+  search.innerHTML = `
+    <input type="text" placeholder="What would you like to do today?" aria-label="Search">
+    <button type="button" aria-label="Submit search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  `;
+  nav.appendChild(search);
 
-  const navSections = nav.querySelector('.nav-sections');
-  if (navSections) {
-    navSections.querySelectorAll(':scope .default-content-wrapper > ul > li').forEach((navSection) => {
-      if (navSection.querySelector('ul')) navSection.classList.add('nav-drop');
-      navSection.addEventListener('click', () => {
-        if (isDesktop.matches) {
-          const expanded = navSection.getAttribute('aria-expanded') === 'true';
-          toggleAllNavSections(navSections);
-          navSection.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-        }
-      });
+  // Create tools section
+  const tools = document.createElement('div');
+  tools.className = 'nav-tools';
+  tools.innerHTML = `
+    <a href="/login">Login</a>
+
+  `;
+  nav.appendChild(tools);
+
+  // Create navigation menu
+  const menu = document.createElement('div');
+  menu.className = 'nav-menu';
+  const menuContent = fragment.querySelector('.nav-sections');
+  if (menuContent) {
+    menu.innerHTML = menuContent.innerHTML;
+    
+    // Add click handlers for mobile dropdowns
+    menu.querySelectorAll('li').forEach(item => {
+      const submenu = item.querySelector('ul');
+      if (submenu) {
+        item.addEventListener('click', (e) => {
+          if (!isDesktop.matches) {
+            e.preventDefault();
+            item.classList.toggle('active');
+          }
+        });
+      }
     });
   }
+  nav.appendChild(menu);
 
-  // hamburger for mobile
-  const hamburger = document.createElement('div');
-  hamburger.classList.add('nav-hamburger');
-  hamburger.innerHTML = `<button type="button" aria-controls="nav" aria-label="Open navigation">
-      <span class="nav-hamburger-icon"></span>
-    </button>`;
-  hamburger.addEventListener('click', () => toggleMenu(nav, navSections));
-  nav.prepend(hamburger);
-  nav.setAttribute('aria-expanded', 'false');
-  // prevent mobile nav behavior on window resize
-  toggleMenu(nav, navSections, isDesktop.matches);
-  isDesktop.addEventListener('change', () => toggleMenu(nav, navSections, isDesktop.matches));
-
+  // Create wrapper and append nav
   const navWrapper = document.createElement('div');
   navWrapper.className = 'nav-wrapper';
   navWrapper.append(nav);
   block.append(navWrapper);
+
+  // Add event listeners
+  window.addEventListener('keydown', closeOnEscape);
+  
+  // Handle mobile menu toggle
+  const mobileMenuBtn = document.createElement('button');
+  mobileMenuBtn.className = 'mobile-menu-toggle';
+  mobileMenuBtn.setAttribute('aria-label', 'Toggle menu');
+  mobileMenuBtn.innerHTML = `
+    <span></span>
+    <span></span>
+    <span></span>
+  `;
+  nav.insertBefore(mobileMenuBtn, nav.firstChild);
+
+  mobileMenuBtn.addEventListener('click', () => {
+    nav.classList.toggle('menu-open');
+    document.body.classList.toggle('menu-open');
+  });
 }
