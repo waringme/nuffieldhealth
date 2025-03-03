@@ -149,6 +149,9 @@ export default async function decorate(block) {
   nav.appendChild(tools);
 
   // Create navigation menu
+  const menuWrapper = document.createElement('div');
+  menuWrapper.className = 'nav-menu-wrapper';
+  
   const menu = document.createElement('div');
   menu.className = 'nav-menu';
   const menuContent = fragment.querySelector('.nav-sections');
@@ -168,7 +171,8 @@ export default async function decorate(block) {
       }
     });
   }
-  nav.appendChild(menu);
+  menuWrapper.appendChild(menu);
+  block.appendChild(menuWrapper);
 
   // Create wrapper and append nav
   const navWrapper = document.createElement('div');
